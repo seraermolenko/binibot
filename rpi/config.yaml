@@ -1,0 +1,11 @@
+esp_ip: 192.168.1.80
+ports: { tx: 5005, rx: 5006 }
+vision:
+  conf_thresh: 0.6
+  lost_timeout_s: 1.5
+  width: 640
+  height: 480
+avoid:
+  dist_m: 0.40
+timing:
+  send_hz: 20
