@@ -1,14 +1,17 @@
 [Unit]
-Description=binibot RPi controller
+Description=Binibot RPi controller
 Wants=network-online.target
 After=network-online.target
 
 [Service]
+Type=simple
 User=pi
 WorkingDirectory=/home/pi/binibot/rpi
-Environment="PYTHONUNBUFFERED=1"
-ExecStart=/home/pi/trashbot/rpi/.venv/bin/python /home/pi/binibot/rpi/rpi_main.py
-Restart=always
+# 👇 use your venv’s python executable
+ExecStart=/home/pi/binibot/rpi/.venv/bin/python /home/pi/binibot/rpi/main.py
+Restart=on-failure
+RestartSec=1
+LimitNOFILE=4096
 
 [Install]
 WantedBy=multi-user.target
