@@ -1,12 +1,13 @@
 [Unit]
-Description=Trashbot RPi controller
+Description=binibot RPi controller
+Wants=network-online.target
 After=network-online.target
 
 [Service]
 User=pi
-WorkingDirectory=/home/pi/trashbot/rpi
+WorkingDirectory=/home/pi/binibot/rpi
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/home/pi/trashbot/rpi/.venv/bin/python /home/pi/trashbot/rpi/rpi_main.py
+ExecStart=/home/pi/trashbot/rpi/.venv/bin/python /home/pi/binibot/rpi/rpi_main.py
 Restart=always
 
 [Install]
