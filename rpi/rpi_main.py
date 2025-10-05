@@ -6,8 +6,7 @@ from typing import Optional, Dict, Any, List
 
 from yolo_bytrack import YoloByteTrack
 from rpi.fsm import binibotFSM
-from udp_link import UdpLink
-from sensors.ultrasonic_proxy import parse_telem
+from rpi.udp_link import UdpLink
 
 def select_target(tracks: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """Pick a person to follow. Policy: largest bbox area (closest)."""
@@ -63,15 +62,31 @@ def main():
         for tracks in tracker.stream(src=vcfg.get("camera_index", 0)):
             target = select_target(tracks)
 
-            telem = link.recv_telemetry() or {}
-            ranges = parse_telem(telem)  
-            obstacle_range = ranges.min_forward() if ranges else None
+            resp = link.recv_telemetry()
+            us_ranges_m = None
 
-            state, v, w = fsm.update(target, obstacle_range)
+            if resp and "status" in resp:
+                ultra_raw = resp["status"].get("ultra_cm")
+                if ultra_raw:
+                    us_ranges_m = [x / 100.0 for x in ultra_raw]
+
+                # NOTE: 4 SENSORS POST TESTING
+                # if ultra_raw and len(ultra_raw) == 4:
+                #     us_ranges_m = [x / 100.0 for x in ultra_raw]
+                # else:
+                #     us_ranges_m = (None, None, None, None)
+
+            fsm.update(target, us_ranges_m)
+            
+            v, w = fsm.controller(
+                bearing=target["bearing"] if target else None,
+                dist_hint=target["dist_m"] if target else None
+            )
+
 
             now = time.time()
             if now >= next_send:
-                link.send_cmd(state, v, w)
+                link.send_cmd(fsm.state, v, w)
                 next_send = now + send_dt
 
             # print(f"{state} v={v:.2f} w={w:.2f} obs={obstacle_range}") # debug
