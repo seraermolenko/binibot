@@ -67,7 +67,7 @@ class UdpLink:
 
             self.tx.sendto(payload, self.tx_addr)
 
-            # Wait up to RETRY_MS for an ACK, polling rx (non-blocking)
+            # polling rx
             t0 = time.time()
             while (time.time() - t0) * 1000 < RETRY_MS:
                 try:
@@ -79,7 +79,7 @@ class UdpLink:
                 except json.JSONDecodeError:
                     continue
 
-                # Expecting {"ack_seq": <int>, "t_ms_echo": <int>, "status": {...}}
+                # {"ack_seq": <int>, "t_ms_echo": <int>, "status": {...}}
                 if resp.get("ack_seq") == msg["seq"]:
                     return True, resp
 

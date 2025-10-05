@@ -7,15 +7,13 @@ class YoloByteTrack:
         self.model = YOLO(model_path)
         self.imgsz = imgsz
         self.conf = conf
-        # Built-in tracker config; you can clone & tune later
+        # Built-in tracker config; fix/ clone & tune later
         self.tracker_cfg = "bytetrack.yaml"
 
     def stream(self, src=0):
-        """Yield per-frame list of tracks as dicts:
-           {id, xyxy, conf, cls}, where cls==0 is 'person'."""
         cap = cv2.VideoCapture(src)
         assert cap.isOpened(), "Camera not found"
-        # Use Ultralytics tracker in streaming mode
+        # streaming mode
         gen = self.model.track(
             source=src,
             imgsz=self.imgsz,
@@ -38,7 +36,7 @@ class YoloByteTrack:
             # boxes.id contains ByteTrack IDs when tracker is active
             ids = boxes.id
             for i in range(len(boxes)):
-                if ids is None:  # Shouldn’t happen when tracker is enabled
+                if ids is None:  
                     track_id = -1
                 else:
                     track_id = int(ids[i].item())
