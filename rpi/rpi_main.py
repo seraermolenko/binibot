@@ -1,9 +1,6 @@
 # binibot RPi orchestrator: webcam → YOLOv8+ByteTrack → FSM → UART → ESP32
 # NOTE: policy: largest bbox area (closest)
 
-# binibot RPi orchestrator: webcam → YOLOv8+ByteTrack → FSM → UART → ESP32
-# NOTE: policy: largest bbox area (closest)
-
 # cls==0 assumed to be 'person' from YOLO model
 
 import time
