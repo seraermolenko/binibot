@@ -1,5 +1,5 @@
 import time
-from rpi.udp_link import UdpLink
+from udp_link import UdpLink
 
 def test_udp_ack():
     link = UdpLink(esp_ip="127.0.0.1", tx_port=5005, rx_port=5006)
