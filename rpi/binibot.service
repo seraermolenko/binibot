@@ -1,0 +1,13 @@
+[Unit]
+Description=Trashbot RPi controller
+After=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/trashbot/rpi
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/home/pi/trashbot/rpi/.venv/bin/python /home/pi/trashbot/rpi/rpi_main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

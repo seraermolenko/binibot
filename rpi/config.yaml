@@ -1,0 +1,31 @@
+comms:
+  esp_ip: "192.168.1.80"
+  tx_port: 5005
+  rx_port: 5006
+  send_hz: 20
+
+vision:
+  model_path: "yolov8n.pt"
+  imgsz: 416
+  conf: 0.6
+  camera_index: 0
+  width: 640
+  height: 480
+  tracker_cfg: "bytetrack.yaml"
+
+fsm:
+  conf_min: 0.35
+  lost_timeout: 1.5
+  avoid_dist: 0.40
+  avoid_clear: 0.8
+  bored_after: 20.0
+  kp_ang: 1.8
+  kp_lin: 0.35
+  max_speed: 0.35
+  follow_stop_dist_m: 1.0
+  still_bored_after_s: 5.0
+  bearing_deadband: 0.08
+
+sensors:
+  names: ["front_left", "front_right", "side_left", "side_right"]
+  forward_indices: [0, 1]
