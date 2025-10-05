@@ -5,7 +5,7 @@ import yaml
 from typing import Optional, Dict, Any, List
 
 from yolo_bytrack import YoloByteTrack
-from rpi.fsm import TrashFSM
+from rpi.fsm import binibotFSM
 from udp_link import UdpLink
 from sensors.ultrasonic_proxy import parse_telem
 
@@ -33,13 +33,13 @@ def main():
 
     fcfg = cfg.get("fsm", {})
     wait_duration = fcfg.get("still_bored_after_s", 5.0)
-    fsm = TrashFSM(
+    fsm = binibotFSM(
         conf_min=fcfg.get("conf_min", 0.35),
         lost_timeout=fcfg.get("lost_timeout", 1.5),
         avoid_dist=fcfg.get("avoid_dist", 0.40),
         avoid_clear=fcfg.get("avoid_clear", 0.8),
         follow_stop_dist_m=fcfg.get("follow_stop_dist_m", 1.0),
-        wait_duration_s=wait_duration,               
+        wait_duration_s=fcfg.get("still_bored_after_s", 5.0),              
         bearing_deadband=fcfg.get("bearing_deadband", 0.08),
         kp_ang=fcfg.get("kp_ang", 1.8),
         kp_lin=fcfg.get("kp_lin", 0.35),

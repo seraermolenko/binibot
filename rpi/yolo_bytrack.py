@@ -3,16 +3,16 @@ from ultralytics import YOLO
 import cv2, time
 
 class YoloByteTrack:
-    def __init__(self, model_path="yolov8n.pt", imgsz=416, conf=0.35):
+    def __init__(self, model_path="yolov8n.pt", imgsz=416, conf=0.35, camera_index=0, tracker_cfg="bytetrack.yaml"):
         self.model = YOLO(model_path)
         self.imgsz = imgsz
         self.conf = conf
-        # Built-in tracker config; fix/ clone & tune later
-        self.tracker_cfg = "bytetrack.yaml"
+        self.camera_index = camera_index
+        self.tracker_cfg = tracker_cfg
 
     def stream(self, src=0):
         cap = cv2.VideoCapture(src)
-        assert cap.isOpened(), "Camera not found"
+        assert cap.isOpened(), f"Camera index {src} not found"
         # streaming mode
         gen = self.model.track(
             source=src,
