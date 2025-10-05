@@ -29,14 +29,18 @@ def select_target(tracks: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     return people[0]
 
 def main():
-    cfg = yaml.safe_load(open("config.yaml"))
-
     vcfg = cfg.get("vision", {})
+    cam = vcfg.get("camera_index", 0)
+    try:
+        cam = int(cam)
+    except (TypeError, ValueError):
+        pass  # if it's a device path like "/dev/video0"
+
     tracker = YoloByteTrack(
         model_path=vcfg.get("model_path", "yolov8n.pt"),
         imgsz=vcfg.get("imgsz", 416),
         conf=vcfg.get("conf", 0.6),
-        camera_index=vcfg.get("camera_index", 0),
+        camera_index=cam,
         tracker_cfg=vcfg.get("tracker_cfg", "bytetrack.yaml"),
     )
 

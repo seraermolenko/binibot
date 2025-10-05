@@ -1,7 +1,3 @@
-// ESP32-C6 + TB6612FNG (UART from Raspberry Pi) — Arduino-ESP32 v3 API
-// Pins 2..7 for motors, STBY tied to 3V3. UART1 on IO16/IO17.
-// Sends/receives "V <v> <w>\n" and "STOP\n". Also supports WASD on USB Serial.
-
 #include <Arduino.h>
 
 // ----- TB6612 pins -----
@@ -11,7 +7,7 @@
 #define BIN1 5
 #define BIN2 6
 #define PWMB 7
-// STBY: wire to 3V3 externally for this test (or drive with a pin later)
+
 
 // ----- UART from Pi (UART1) -----
 #define RX1 16   // Pi TXD0 -> ESP32 IO16
