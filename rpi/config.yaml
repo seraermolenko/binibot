@@ -1,7 +1,6 @@
 comms:
-  esp_ip: "192.168.1.80"
-  tx_port: 5005
-  rx_port: 5006
+  uart_port: "/dev/serial0"  
+  baud: 115200
   send_hz: 20
 
 vision:
@@ -11,6 +10,7 @@ vision:
   camera_index: 0
   width: 640
   height: 480
+  fps: 5 
   tracker_cfg: "bytetrack.yaml"
 
 fsm:
@@ -27,5 +27,5 @@ fsm:
   bearing_deadband: 0.08
 
 sensors:
-  names: ["front_left", "front_right", "side_left", "side_right"]
-  forward_indices: [0, 1]
+  names: ["front"]
+  forward_indices: [0]
