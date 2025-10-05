@@ -1,21 +1,34 @@
-# binibot RPi orchestrator: webcam → YOLOv8+ByteTrack → FSM → UDP → ESP32
+# binibot RPi orchestrator: webcam → YOLOv8+ByteTrack → FSM → UART → ESP32
+# NOTE: policy: largest bbox area (closest)
+
+# binibot RPi orchestrator: webcam → YOLOv8+ByteTrack → FSM → UART → ESP32
+# NOTE: policy: largest bbox area (closest)
+
+# cls==0 assumed to be 'person' from YOLO model
 
 import time
 import yaml
+import struct
 from typing import Optional, Dict, Any, List
 
+from adapter import bbox_to_target
 from yolo_bytrack import YoloByteTrack
-from rpi.fsm import binibotFSM
-from rpi.udp_link import UdpLink
+from fsm import binibotFSM
+from comm.serial_link import SerialLink
+from comm.msg_types import CMD, STATUS, ACK_MASK, STATE_ID
+
 
 def select_target(tracks: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Pick a person to follow. Policy: largest bbox area (closest)."""
     if not tracks:
         return None
     people = [t for t in tracks if t.get("cls") == 0]
     if not people:
         return None
-    people.sort(key=lambda t: (t["xyxy"][3]-t["xyxy"][1]) * (t["xyxy"][2]-t["xyxy"][0]), reverse=True)
+    # choose the largest bbox area (closest)
+    people.sort(
+        key=lambda t: (t["xyxy"][3] - t["xyxy"][1]) * (t["xyxy"][2] - t["xyxy"][0]),
+        reverse=True,
+    )
     return people[0]
 
 def main():
@@ -31,14 +44,13 @@ def main():
     )
 
     fcfg = cfg.get("fsm", {})
-    wait_duration = fcfg.get("still_bored_after_s", 5.0)
     fsm = binibotFSM(
         conf_min=fcfg.get("conf_min", 0.35),
         lost_timeout=fcfg.get("lost_timeout", 1.5),
         avoid_dist=fcfg.get("avoid_dist", 0.40),
         avoid_clear=fcfg.get("avoid_clear", 0.8),
         follow_stop_dist_m=fcfg.get("follow_stop_dist_m", 1.0),
-        wait_duration_s=fcfg.get("still_bored_after_s", 5.0),              
+        wait_duration_s=fcfg.get("still_bored_after_s", 5.0),
         bearing_deadband=fcfg.get("bearing_deadband", 0.08),
         kp_ang=fcfg.get("kp_ang", 1.8),
         kp_lin=fcfg.get("kp_lin", 0.35),
@@ -47,12 +59,10 @@ def main():
         frame_h=vcfg.get("height", 480),
     )
 
-    # --- Comms (RPi ↔ ESP32) ---
     ccfg = cfg.get("comms", {})
-    link = UdpLink(
-        esp_ip=ccfg.get("esp_ip", "192.168.1.80"),
-        tx_port=ccfg.get("tx_port", 5005),   # Pi → ESP
-        rx_port=ccfg.get("rx_port", 5006),   # ESP → Pi
+    link = SerialLink(
+        port=ccfg.get("uart_port", "/dev/serial0"),
+        baud=ccfg.get("baud", 115200),
     )
     send_hz = ccfg.get("send_hz", 20)
     send_dt = 1.0 / max(1, send_hz)
@@ -60,41 +70,49 @@ def main():
 
     try:
         for tracks in tracker.stream(src=vcfg.get("camera_index", 0)):
-            target = select_target(tracks)
+            raw = select_target(tracks)
+            target = bbox_to_target(
+                raw,
+                vcfg.get("width", 640),
+                vcfg.get("height", 480),
+            ) if raw else None
 
-            resp = link.recv_telemetry()
-            us_ranges_m = None
+            obstacle_range = None  # meters
+            evt = link.recv()
+            if evt:
+                typ, payload = evt
+                if typ == STATUS and len(payload) >= 2:
+                    (ultra_cm,) = struct.unpack("<H", payload[:2])
+                    if ultra_cm > 0:
+                        obstacle_range = ultra_cm / 100.0
 
-            if resp and "status" in resp:
-                ultra_raw = resp["status"].get("ultra_cm")
-                if ultra_raw:
-                    us_ranges_m = [x / 100.0 for x in ultra_raw]
+            fsm.update(target, obstacle_range)
 
-                # NOTE: 4 SENSORS POST TESTING
-                # if ultra_raw and len(ultra_raw) == 4:
-                #     us_ranges_m = [x / 100.0 for x in ultra_raw]
-                # else:
-                #     us_ranges_m = (None, None, None, None)
-
-            fsm.update(target, us_ranges_m)
-            
             v, w = fsm.controller(
                 bearing=target["bearing"] if target else None,
-                dist_hint=target["dist_m"] if target else None
+                dist_hint=target["dist_m"] if target else None,
             )
-
 
             now = time.time()
             if now >= next_send:
-                link.send_cmd(fsm.state, v, w)
-                next_send = now + send_dt
+                state_id = STATE_ID.get(fsm.state, STATE_ID["WAIT"])
+                payload = struct.pack("<Bff", state_id, float(v), float(w))
+                link.send(CMD, payload)
 
-            # print(f"{state} v={v:.2f} w={w:.2f} obs={obstacle_range}") # debug
+                # optional, non-blocking peek for ACK:
+                # ack = link.recv()
+                # if ack and ack[0] == (CMD | ACK_MASK): pass
+
+                next_send = now + send_dt
 
     except KeyboardInterrupt:
         pass
     finally:
-        link.send_cmd("WAIT", 0.0, 0.0)
+        try:
+            payload = struct.pack("<Bff", STATE_ID["WAIT"], 0.0, 0.0)
+            link.send(CMD, payload)
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     main()
