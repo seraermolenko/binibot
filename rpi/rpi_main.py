@@ -1,3 +1,4 @@
+
 # binibot RPi orchestrator: webcam → YOLOv8+ByteTrack → FSM → UART → ESP32
 # NOTE: policy: largest bbox area (closest)
 
